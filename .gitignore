@@ -30,3 +30,6 @@ pnpm-debug.log*
 # The canonical, renamed copies are committed under public/images/.
 resitemariage/
 sitemariage/
+
+# captures de vérification (locales, non versionnées)
+.captures/
