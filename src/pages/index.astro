@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Scaffold only: no envelope, no password gate, no GSAP timeline yet.
+// This page currently exists to prove the routing works (devbook step 1).
+const links = [
+  { label: 'Présence', href: '/rsvp' },
+  { label: 'Infos pratiques', href: '/infos-pratiques' },
+  { label: 'Dress code', href: '/dress-code' },
+  { label: 'Appareil photo', href: '/a-venir' },
+];
+---
+
+<BaseLayout title="Accueil">
+  <main class="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center px-6 py-16 sm:px-10">
+    <h1 class="text-4xl text-forest sm:text-5xl">Le Mariage des LULU</h1>
+    <p class="mt-4 text-forest/70">
+      Domaine Verdé — forêt Royale de Vacquiers — 31.07.2027
+    </p>
+
+    <nav class="mt-12">
+      <h2 class="text-sm uppercase tracking-widest text-forest/50">
+        Vérification du routing
+      </h2>
+      <ul class="mt-4 space-y-2">
+        {
+          links.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="text-lg text-forest underline decoration-forest/30 underline-offset-4 transition-opacity hover:opacity-70"
+              >
+                {link.label}
+              </a>
+              <span class="ml-2 text-sm text-forest/40">{link.href}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <p class="mt-12 text-sm text-forest/50">
+      « Programme » et « Invit » ne sont pas des pages : ce sont deux visuels posés
+      sur la lettre (devbook §1.4).
+    </p>
+  </main>
+</BaseLayout>

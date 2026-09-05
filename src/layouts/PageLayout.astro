@@ -1,0 +1,31 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import BackToHome from '../components/BackToHome.astro';
+
+interface Props {
+  /** Page title, suffixed with the site name by BaseLayout. */
+  title: string;
+  /** Heading shown at the top of the page; defaults to the title. */
+  heading?: string;
+  description?: string;
+}
+
+const { title, heading = title, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="mx-auto flex min-h-dvh max-w-3xl flex-col px-6 py-8 sm:px-10">
+    <header class="mb-12">
+      <BackToHome />
+      <h1 class="mt-8 text-3xl text-forest sm:text-4xl">{heading}</h1>
+    </header>
+
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="mt-16 border-t border-forest/15 pt-6 text-xs text-forest/60">
+      Domaine Verdé — forêt Royale de Vacquiers — 31.07.2027
+    </footer>
+  </div>
+</BaseLayout>

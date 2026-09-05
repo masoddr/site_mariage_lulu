@@ -1,0 +1,41 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  /** Page title, suffixed with the site name. */
+  title: string;
+  /** Meta description; falls back to a generic wedding description. */
+  description?: string;
+}
+
+const {
+  title,
+  description = "Le mariage de Lucie et Ludo — Domaine Verdé, forêt Royale de Vacquiers, le 31 juillet 2027.",
+} = Astro.props;
+
+const SITE_NAME = 'Le Mariage des LULU';
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>{title} — {SITE_NAME}</title>
+    <meta name="description" content={description} />
+
+    <!-- The site is password protected: keep it out of search engines. -->
+    <meta name="robots" content="noindex, nofollow" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+  </head>
+
+  <body class="min-h-dvh bg-paper font-serif text-ink antialiased">
+    <slot />
+  </body>
+</html>

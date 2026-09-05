@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens sampled directly from Lucie's artwork:
+ *   - forest: the green of the six shapes
+ *   - kraft:  the envelope paper
+ *   - paper:  the ivory of the letter / invitation card
+ */
+@theme {
+  --color-forest: #374f35;
+  --color-forest-deep: #22301f;
+  --color-kraft: #d4cac1;
+  --color-paper: #e9e7e1;
+  --color-ink: #1a1a18;
+
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+}
+
+/* Accessibility: users who ask for less motion get no animation at all. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
