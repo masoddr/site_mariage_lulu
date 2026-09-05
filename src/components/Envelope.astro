@@ -1,0 +1,33 @@
+---
+import { Image } from 'astro:assets';
+
+import closedEnvelope from '../assets/images/envelope/enveloppe-fermee.png';
+
+interface Props {
+  /** Extra classes, mostly for sizing from the parent. */
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+
+// The light drop shadow baked into the artwork is stripped by
+// scripts/prepare_assets.py, because it turned into a white halo over the dark
+// backdrop. This dark CSS shadow replaces it and stays correct on any backdrop.
+const shadow = '[filter:drop-shadow(0_18px_28px_rgb(0_0_0/0.45))]';
+---
+
+{/*
+  Static closed envelope (devbook step 3). The `perspective` on the wrapper and
+  the `data-*` hooks are already in place for the GSAP timeline of step 5, which
+  will rotate the flap on `rotateX` around its top edge.
+*/}
+<div data-envelope="closed" class:list={['[perspective:1200px]', className]}>
+  <Image
+    src={closedEnvelope}
+    alt="Une enveloppe fermée, scellée à la cire verte du monogramme des mariés"
+    sizes="(min-width: 768px) 32rem, 85vw"
+    width={512}
+    loading="eager"
+    class:list={['mx-auto h-auto w-full', shadow]}
+  />
+</div>

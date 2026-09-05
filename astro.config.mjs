@@ -24,6 +24,16 @@ export default defineConfig({
     },
   },
 
+  // Lucie's artwork is imported from src/assets, so `astro:assets` converts it
+  // to WebP and emits a responsive srcset at build time. This replaces the
+  // manual "PNG -> WebP + <picture> fallback" step planned in the devbook.
+  image: {
+    layout: 'constrained',
+    // The shapes are transparent cut-outs: never crop them to fill their box.
+    objectFit: 'contain',
+    responsiveStyles: true,
+  },
+
   vite: {
     plugins: [tailwindcss()],
   },

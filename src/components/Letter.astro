@@ -1,0 +1,38 @@
+---
+import ShapeCard from './ShapeCard.astro';
+import { shapes } from '../data/shapes';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+---
+
+{/*
+  The unfolded letter with the six shapes posed on it (devbook step 3, static).
+  Step 5 will animate this container in with a `clip-path` unfold, then stagger
+  the `[data-shape]` children out of the envelope.
+*/}
+<article
+  data-letter
+  class:list={[
+    'relative rounded-sm bg-paper px-6 py-12 shadow-2xl ring-1 ring-ink/5 sm:px-12 sm:py-16',
+    className,
+  ]}
+>
+  <header class="text-center">
+    <p class="text-xs uppercase tracking-[0.3em] text-forest/60">Lucie &amp; Lucas</p>
+    <h1 class="mt-4 text-3xl text-forest sm:text-4xl">Le Mariage des LULU</h1>
+    <p class="mt-3 text-sm text-forest/70">
+      Domaine Verdé — forêt Royale de Vacquiers — 31.07.2027
+    </p>
+  </header>
+
+  <div
+    data-shapes
+    class="mt-14 grid grid-cols-1 items-center gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3"
+  >
+    {shapes.map((shape) => <ShapeCard shape={shape} />)}
+  </div>
+</article>

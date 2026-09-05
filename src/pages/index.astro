@@ -1,47 +1,44 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Envelope from '../components/Envelope.astro';
+import Letter from '../components/Letter.astro';
 
-// Scaffold only: no envelope, no password gate, no GSAP timeline yet.
-// This page currently exists to prove the routing works (devbook step 1).
-const links = [
-  { label: 'Présence', href: '/rsvp' },
-  { label: 'Infos pratiques', href: '/infos-pratiques' },
-  { label: 'Dress code', href: '/dress-code' },
-  { label: 'Appareil photo', href: '/a-venir' },
-];
+/*
+ * Devbook step 3: static layout only. No password gate, no GSAP timeline.
+ *
+ * The two states of the opening sequence are laid out one after the other so
+ * both can be checked visually. Step 5 turns them into a single screen: the
+ * letter starts hidden and emerges from the envelope on a GSAP timeline.
+ */
 ---
 
 <BaseLayout title="Accueil">
-  <main class="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center px-6 py-16 sm:px-10">
-    <h1 class="text-4xl text-forest sm:text-5xl">Le Mariage des LULU</h1>
-    <p class="mt-4 text-forest/70">
-      Domaine Verdé — forêt Royale de Vacquiers — 31.07.2027
-    </p>
+  {/*
+    Placeholder backdrop. Swap for the estate photo (with the slow Ken Burns
+    effect of devbook §1.1) once Lucie provides it.
+  */}
+  <div
+    class="fixed inset-0 -z-10 bg-linear-to-b from-forest-deep via-forest to-forest-deep"
+    aria-hidden="true"
+  >
+    <div class="absolute inset-0 bg-ink/20"></div>
+  </div>
 
-    <nav class="mt-12">
-      <h2 class="text-sm uppercase tracking-widest text-forest/50">
-        Vérification du routing
-      </h2>
-      <ul class="mt-4 space-y-2">
-        {
-          links.map((link) => (
-            <li>
-              <a
-                href={link.href}
-                class="text-lg text-forest underline decoration-forest/30 underline-offset-4 transition-opacity hover:opacity-70"
-              >
-                {link.label}
-              </a>
-              <span class="ml-2 text-sm text-forest/40">{link.href}</span>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
+  <main>
+    <section
+      class="flex min-h-dvh flex-col items-center justify-center px-6 py-16"
+      aria-labelledby="etat-initial"
+    >
+      <h2 id="etat-initial" class="sr-only">Votre invitation</h2>
+      <Envelope class="w-full max-w-lg" />
+      <p class="mt-10 text-center text-sm tracking-widest text-paper/70 uppercase">
+        Étape 4 : le champ mot de passe apparaîtra ici
+      </p>
+    </section>
 
-    <p class="mt-12 text-sm text-forest/50">
-      « Programme » et « Invit » ne sont pas des pages : ce sont deux visuels posés
-      sur la lettre (devbook §1.4).
-    </p>
+    <section class="px-4 pb-24 sm:px-6" aria-labelledby="etat-final">
+      <h2 id="etat-final" class="sr-only">L'invitation dépliée</h2>
+      <Letter class="mx-auto max-w-5xl" />
+    </section>
   </main>
 </BaseLayout>

@@ -35,10 +35,20 @@ npm run dev
 ## Structure
 
 ```
+assets-source/                   visuels reçus de Lucie, jamais modifiés
+  shapes/                        les 6 formes (fond transparent)
+  envelope/                      enveloppe fermée et ouverte
+scripts/
+  prepare_assets.py              recadre les visuels -> src/assets/images/
 src/
+  assets/images/                 généré par le script, consommé par astro:assets
   components/BackToHome.astro    lien de retour vers l'accueil
+  components/Envelope.astro      enveloppe fermée (état initial)
+  components/Letter.astro        la lettre dépliée et ses 6 formes
+  components/ShapeCard.astro     une forme, lien ou visuel décoratif
   data/guests.json               liste des invités (généré depuis l'Excel)
   data/guests.ts                 accès typé à guests.json
+  data/shapes.ts                 les 6 formes : image, libellé, destination
   layouts/BaseLayout.astro       <html>, meta tags, styles globaux
   layouts/PageLayout.astro       gabarit des 4 pages internes (titre + retour)
   pages/index.astro              enveloppe, mot de passe, hub des formes
@@ -50,10 +60,21 @@ src/
   pages/api/rsvp.ts              POST — enregistre le RSVP et envoie les mails
   styles/global.css              import Tailwind + tokens de la charte
   types.ts                       types métier (Guest, RsvpPayload…)
-public/images/
-  shapes/                        les 6 formes de Lucie (fond transparent)
-  envelope/                      enveloppe fermée et ouverte
 ```
+
+### Retraitement des visuels
+
+Les fichiers de Lucie arrivent sur des canvas surdimensionnés (jusqu'à 55 % de
+marge transparente sur `presence.png`), ce qui casse la mise en page CSS. À
+relancer à chaque nouvel envoi :
+
+```bash
+python scripts/prepare_assets.py
+```
+
+Le poids des images est géré par `astro:assets` au build (WebP + `srcset`
+responsive) : pas de conversion manuelle à faire. Mesuré sur ce projet,
+5,1 Mo de PNG sources deviennent 508 Ko de WebP servis.
 
 ## Variables d'environnement
 
@@ -66,7 +87,7 @@ Suit l'ordre du devbook §4.
 
 - [x] 1. Scaffold Astro + Tailwind + adapter Vercel
 - [ ] 2. Conversion de l'Excel en `src/data/guests.json`
-- [ ] 3. Page d'accueil statique (enveloppe, sans animation)
+- [x] 3. Page d'accueil statique (enveloppe, sans animation)
 - [ ] 4. Route `/api/check-password` + déverrouillage côté client
 - [ ] 5. Timeline GSAP de la séquence d'ouverture
 - [ ] 6. Contenu des pages Infos pratiques, Dress code, À venir
@@ -74,10 +95,20 @@ Suit l'ordre du devbook §4.
 - [ ] 8. Tests responsive (version allégée de l'animation sur mobile)
 - [ ] 9. Achat et configuration DNS du domaine sur Vercel
 
-### Reste à fournir
+### Reste à fournir par Lucie
 
 - Le texte définitif des pages Infos pratiques et Dress code.
-- La photo du domaine pour le fond de la page d'accueil.
+- La photo du domaine pour le fond de la page d'accueil (un dégradé vert
+  provisoire tient la place dans `index.astro`).
 - Le fichier Excel des invités (nom, email, hébergement).
-- Conversion des PNG en WebP avec fallback, notamment `presence.png` (1,5 Mo)
-  et `programme.png` (1,9 Mo).
+
+### Décisions en attente
+
+- Les formes « Programme » et « Invit » sont pour l'instant purement
+  décoratives, l'option la plus fidèle à la demande de Lucie. L'alternative
+  (clic ouvrant une lightbox) reste ouverte : `Shape.href` vaut `null` pour
+  ces deux formes, il suffirait d'ajouter un mode d'affichage dans
+  `src/data/shapes.ts`.
+- L'équilibre visuel de la grille : « Appareil photo » (ratio 1,70) et
+  « Dress code » (1,03) paraissent plus petits que les quatre formes en
+  portrait (0,62 à 0,71). À arbitrer avec Lucie.

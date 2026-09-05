@@ -6,14 +6,19 @@
 |---|---|---|
 | Framework | **Astro** (déjà décidé) | Bon fit : site majoritairement statique, quelques îlots interactifs |
 | Animation enveloppe/lettre | **GSAP** (vanilla TS, pas besoin de React) | C'est LE standard pour des séquences chorégraphiées (timelines, easing physique). Rendu "premium", pas de rendu "vieux HTML" tant qu'on soigne l'easing et le stagger. Reste léger, s'intègre nativement dans un `<script>` Astro sans framework UI. |
-| Style | **Tailwind CSS** | Rapide à mettre en place avec Astro, évite le CSS qui traîne |
-| Rendu | **Astro en mode hybride/server** (adapter Vercel ou Netlify) | Il te faut un backend léger pour : (1) vérifier le mot de passe côté serveur, (2) traiter le formulaire RSVP et envoyer les mails. Astro seul en mode statique ne peut pas faire ça. |
+| Style | **Tailwind CSS 4**, via le plugin `@tailwindcss/vite` | Rapide à mettre en place avec Astro, évite le CSS qui traîne. ⚠️ L'ancienne intégration `@astrojs/tailwind` est **dépréciée** et ne cible que Tailwind 3 : elle ne recevra pas de support Astro 6+. Tailwind 4 se configure en CSS (bloc `@theme` dans `global.css`), il n'y a plus de `tailwind.config.js`. |
+| Rendu | **Astro en `output: 'static'`** + adapter Vercel | Il te faut un backend léger pour : (1) vérifier le mot de passe côté serveur, (2) traiter le formulaire RSVP et envoyer les mails. ⚠️ Le mode `hybrid` a été **supprimé dans Astro 5** : il a été fusionné dans `static`, qui a désormais son comportement. Concrètement, tout est pré-rendu par défaut et chaque route qui a besoin du serveur porte `export const prerender = false`. L'adapter reste obligatoire. |
+| Runtime | **Node 24** (`.nvmrc` + `package.json#engines`) | Version par défaut sur Vercel, et Astro 7 exige Node ≥ 22.12. ⚠️ Node 20 est **désactivé sur Vercel depuis le 01/10/2026** : ne pas partir dessus. |
 | Emails | **Resend** (API simple, bon niveau gratuit) | Plus simple qu'un SMTP/Nodemailer à configurer, s'intègre en 5 lignes dans une route API Astro |
 | Stockage des réponses RSVP | Un simple **Google Sheet** (via API) ou une petite base **Supabase/Turso** | Pour ne pas dépendre uniquement des emails pour savoir qui a répondu. Commence simple : Google Sheet si tu veux zéro infra, Supabase si tu veux une vraie base + un futur tableau de bord |
 | Données invités (nom, hébergement) | Fichier **JSON généré une fois depuis ton Excel** | Sert à peupler la liste déroulante ET à savoir si la personne est "grisée" (déjà à l'hôtel) |
 | Hébergement du site | **Vercel** | Adapter Astro officiel, domaines custom faciles, fonctions serverless incluses |
 
 Un point important sur le mot de passe : ne mets jamais le mot de passe en clair dans le JS client (n'importe qui peut l'ouvrir dans l'inspecteur). Il doit être vérifié côté serveur (route API Astro) contre une variable d'environnement, qui renvoie un token/flag si c'est bon.
+
+Les variables d'environnement passent par `astro:env` (schéma déclaré dans `env.schema` de `astro.config.mjs`) plutôt que par `import.meta.env` brut : elles sont ainsi typées, validées, et les secrets marqués `access: 'secret'` ne peuvent pas fuiter dans le bundle client.
+
+À savoir aussi : la protection CSRF d'Astro (`security.checkOrigin`) est **active par défaut** et renvoie 403 sur un POST dont l'en-tête `Origin` ne correspond pas au site. C'est transparent pour un `fetch` depuis le site lui-même, mais ça explique un 403 si tu testes une route au curl sans cet en-tête.
 
 ---
 
@@ -58,21 +63,39 @@ Un composant `src/components/BackToHome.astro` (ou intégré dans un layout déd
 
 ## 2bis. Organisation des assets (formes reçues de Lucie)
 
-Toutes les formes ont un fond transparent, pensées pour être posées sur la lettre — à ranger dans `public/images/shapes/` avec des noms explicites, par ex. :
+Toutes les formes ont un fond transparent, pensées pour être posées sur la lettre. Le pipeline retenu sépare la source de ce que consomme le build :
 
 ```
-public/images/shapes/
-  presence.png
-  infos-pratiques.png
-  dress-code.png
-  appareil-photo.png
-  programme.png
-  invit.png
+assets-source/            visuels reçus de Lucie, jamais modifiés (source de vérité)
+  shapes/                   presence.png, infos-pratiques.png, dress-code.png,
+                            appareil-photo.png, programme.png, invit.png
+  envelope/                 enveloppe-fermee.png, enveloppe-ouverte.png
+
+src/assets/images/        régénéré par scripts/prepare_assets.py, consommé par astro:assets
 ```
 
-Le fichier "programme" et "invit" contiennent déjà le texte final (programme du samedi/dimanche, carton d'invitation avec lieu et date : Domaine Verdé, forêt Royale de Vacquiers, 31.07.2027) — ce sont donc des visuels figés, pas des composants à re-designer. Pour "Infos pratiques" et "Dress code", le texte n'est pas encore fourni par Lucie : ne bloque pas le développement dessus, avance avec un contenu de remplacement ("Lorem" ou une structure de titres) que tu remplaceras dès qu'elle te l'envoie.
+⚠️ Les fichiers de Lucie sont exportés sur des canvas surdimensionnés : jusqu'à **55 % de `presence.png` n'est que de la marge transparente**. Cette marge devient de la surface invisible en CSS et casse silencieusement toute mise en page. `scripts/prepare_assets.py` recadre chaque visuel sur sa boîte englobante opaque. À relancer à chaque nouvel envoi de Lucie :
 
-Pense à convertir ces PNG en **WebP** (en gardant un fallback PNG) pour le poids des images, surtout celles en haute résolution comme `presence.png` (assez lourde).
+```bash
+python scripts/prepare_assets.py
+```
+
+⚠️ `enveloppe-fermee.png` embarque aussi une **ombre portée claire incrustée** dans le PNG (15 % du visuel, beige). Elle passe pour une ombre sur fond blanc, mais devient un halo blanc sur le fond sombre de l'accueil. Le script la retire (seuillage du canal alpha, voir `ALPHA_CUTOFFS`) et `Envelope.astro` la remplace par une vraie ombre CSS sombre, qui reste correcte quel que soit le fond.
+
+Le fichier "programme" et "invit" contiennent déjà le texte final — ce sont donc des visuels figés, pas des composants à re-designer. Contenu confirmé en les ouvrant :
+
+- **programme** : *Samedi* 15h ouverture des portes du domaine, 16h début de la cérémonie, 17h30 photos de groupe, 18h15 vin d'honneur, 20h15 repas, soirée dansante. *Dimanche* 11h brunch.
+- **invit** : « Lucie et Lucas sont heureux de vous inviter à célébrer leur union au Domaine Verdé, dans la forêt Royale de Vacquiers (31340) — 31.07.2027 ».
+
+⚠️ Les mariés sont donc **Lucie et Lucas** (LUcie + LUcas = LULU), pas « Ludo ».
+
+Pour "Infos pratiques" et "Dress code", le texte n'est pas encore fourni par Lucie : ne pas bloquer le développement dessus, avancer avec une structure de titres à compléter.
+
+### Poids des images : rien à faire à la main
+
+La conversion WebP manuelle avec fallback `<picture>` n'est **plus nécessaire**. Les visuels sont importés depuis `src/assets/`, donc `astro:assets` s'en charge au build : conversion WebP, `srcset` responsive et `width`/`height` posés pour éviter le décalage de mise en page. Il suffit d'utiliser le composant `<Image>` plutôt qu'une balise `<img>`.
+
+Résultat mesuré : **5,1 Mo de PNG sources → 508 Ko de WebP servis**, toutes variantes du `srcset` confondues (`programme.png` passe de 1793 Ko à 31 Ko). La configuration se trouve dans le bloc `image` de `astro.config.mjs` (`layout: 'constrained'`, `objectFit: 'contain'` car les formes sont des découpes transparentes qu'il ne faut jamais rogner).
 
 ---
 
@@ -91,9 +114,9 @@ Pense à convertir ces PNG en **WebP** (en gardant un fallback PNG) pour le poid
 
 ## 4. Ordre de développement conseillé (à donner à Cursor, étape par étape — ne pas tout demander d'un coup)
 
-1. Scaffold du projet Astro + Tailwind + adapter Vercel, structure de dossiers ci-dessus.
+1. ~~Scaffold du projet Astro + Tailwind + adapter Vercel, structure de dossiers ci-dessus.~~ ✅ **Fait** (commit `906d0c5`).
 2. Conversion du fichier Excel en `src/data/guests.json` (script one-shot, pas besoin de l'automatiser).
-3. Page d'accueil : mise en place statique de l'enveloppe (sans animation, sans mot de passe) pour valider le layout et les assets.
+3. ~~Page d'accueil : mise en place statique de l'enveloppe (sans animation, sans mot de passe) pour valider le layout et les assets.~~ ✅ **Fait**. Les deux états de la séquence sont posés l'un après l'autre sur la page pour être vérifiables à l'œil ; l'étape 5 en fera un seul écran.
 4. Route API `/api/check-password` + logique client (fetch, gestion des erreurs, état "déverrouillé" en `sessionStorage`).
 5. Timeline GSAP de la séquence d'ouverture (enveloppe → lettre → formes), en itérant sur les easings/timings.
 6. Pages statiques : Infos pratiques, Dress Code, À venir (photos).
@@ -103,31 +126,22 @@ Pense à convertir ces PNG en **WebP** (en gardant un fallback PNG) pour le poid
 
 ---
 
-## 5. Prompt à copier-coller dans Cursor (première étape uniquement : le scaffold)
+## 5. État du projet et charte
 
-```
-Contexte : je construis un site de mariage statique/hybride avec Astro, Tailwind CSS et un adapter Vercel pour deux fonctions serverless (vérification de mot de passe, traitement d'un formulaire RSVP avec envoi de mail via Resend).
+L'étape 1 (scaffold) est faite : voir le `README.md` pour l'arborescence réelle, les scripts et la liste de ce qui reste à fournir par Lucie.
 
-Étape actuelle : scaffold uniquement, pas d'animation ni de logique métier pour l'instant.
+### Charte graphique
 
-Fais ceci :
-1. Initialise un projet Astro avec TypeScript strict, Tailwind CSS, et l'adapter @astrojs/vercel en mode "hybrid" (pages statiques par défaut, routes API en server-rendering).
-2. Crée la structure de dossiers suivante :
-   - src/pages/index.astro
-   - src/pages/rsvp.astro
-   - src/pages/infos-pratiques.astro
-   - src/pages/dress-code.astro
-   - src/pages/a-venir.astro
-   - src/pages/api/check-password.ts
-   - src/pages/api/rsvp.ts
-   - src/data/guests.json (fichier vide en attendant, structure : [{ "name": string, "email": string | null, "hebergement": "hotel" | "libre" }])
-   - src/components/BackToHome.astro (composant simple, lien vers "/", utilisé sur rsvp/infos-pratiques/dress-code/a-venir)
-   - src/layouts/BaseLayout.astro (layout minimal avec meta tags de base)
-3. Configure les variables d'environnement dans un .env.example : SITE_PASSWORD, RESEND_API_KEY, NOTIFY_EMAIL (email de Lucie).
-4. Ajoute un .gitignore adapté (node_modules, .env, dist, .vercel).
-5. N'implémente aucune logique d'animation ni d'envoi de mail à cette étape : uniquement le scaffold, avec des pages qui affichent juste un titre de section pour vérifier que le routing fonctionne.
+Couleurs échantillonnées directement dans les visuels de Lucie et exposées comme tokens Tailwind dans `src/styles/global.css` :
 
-Ne me propose pas de librairie d'animation à cette étape, je la choisirai moi-même (ce sera GSAP).
-```
+| Token | Valeur | Origine |
+|---|---|---|
+| `forest` | `#374F35` | le vert des 6 formes |
+| `forest-deep` | `#22301F` | variante sombre pour les contrastes |
+| `kraft` | `#D4CAC1` | le papier de l'enveloppe |
+| `paper` | `#E9E7E1` | l'ivoire du carton d'invitation |
+| `ink` | `#1A1A18` | le texte |
 
-Une fois ce scaffold validé, on donne à Cursor l'étape suivante (mot de passe côté serveur), puis celle d'après (timeline GSAP), plutôt que de tout demander en un seul prompt géant — Cursor produit un code bien plus propre quand chaque étape est isolée et vérifiable.
+### Méthode de travail
+
+On avance étape par étape plutôt qu'en un seul prompt géant : le code est bien plus propre quand chaque étape est isolée et vérifiable. Après chaque étape, valider avec `npm run build` et `npm run check` (0 erreur attendue) avant de passer à la suivante.

@@ -1,0 +1,48 @@
+---
+import { Image } from 'astro:assets';
+
+import type { Shape } from '../data/shapes';
+
+interface Props {
+  shape: Shape;
+}
+
+const { shape } = Astro.props;
+
+// A decorative shape must not be announced twice: its meaning is already in the
+// artwork, and it is not actionable.
+const isLink = shape.href !== null;
+
+// Shared with the GSAP timeline (devbook step 5), which staggers `[data-shape]`.
+const sizes = '(min-width: 1024px) 18rem, (min-width: 640px) 40vw, 70vw';
+---
+
+{
+  isLink ? (
+    <a
+      href={shape.href}
+      data-shape={shape.id}
+      class="group block rounded-sm transition-transform duration-300 ease-out hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-forest motion-reduce:transition-none motion-reduce:hover:scale-100"
+    >
+      <Image
+        src={shape.image}
+        alt={shape.label}
+        sizes={sizes}
+        width={320}
+        loading="eager"
+        class="mx-auto h-auto w-full max-w-72 drop-shadow-md transition-[filter] duration-300 ease-out group-hover:drop-shadow-xl motion-reduce:transition-none"
+      />
+    </a>
+  ) : (
+    <div data-shape={shape.id} class="block">
+      <Image
+        src={shape.image}
+        alt={shape.label}
+        sizes={sizes}
+        width={320}
+        loading="eager"
+        class="mx-auto h-auto w-full max-w-72 drop-shadow-md"
+      />
+    </div>
+  )
+}
