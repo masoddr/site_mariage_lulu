@@ -1,9 +1,13 @@
 # Le Mariage des LULU
 
-Site d'invitation pour le mariage de Lucie et Ludo — Domaine Verdé, forêt Royale
+Site d'invitation pour le mariage de Lucie et Lucas — Domaine Verdé, forêt Royale
 de Vacquiers, le 31 juillet 2027.
 
 Le plan technique complet et l'ordre de développement sont dans [`devbook.md`](./devbook.md).
+Les **sources envoyées par Lucie** — textes des mails recopiés tels quels, lien
+du Drive des visuels, lien du Sheet des invités — sont dans
+[`docs/sources-lucie.md`](./docs/sources-lucie.md). C'est la référence à relire
+avant de toucher au contenu d'une page.
 
 ## Stack
 
@@ -35,18 +39,26 @@ npm run dev
 ## Structure
 
 ```
+docs/
+  sources-lucie.md               mails et liens de Lucie, bruts (source de vérité du contenu)
+  sources/invites-laique.csv     export du Sheet des invités
+  sources/da-mariage-lulax/      dossier Illustrator du Drive (103 Mo, non versionné)
+public/fonts/                    Billa Mount, convertie du .ttf du Drive
 assets-source/                   visuels reçus de Lucie, jamais modifiés
   shapes/                        les 6 formes (fond transparent)
   envelope/                      enveloppe fermée et ouverte
+  dress-code/                    les 3 couleurs aquarellées
+  decor/                         visuels du Drive pas encore utilisés
 scripts/
   prepare_assets.py              recadre les visuels -> src/assets/images/
+  import_guests.py               CSV du Sheet -> src/data/guests.json
 src/
   assets/images/                 généré par le script, consommé par astro:assets
   components/BackToHome.astro    lien de retour vers l'accueil
   components/Envelope.astro      enveloppe fermée (état initial)
   components/Letter.astro        la lettre dépliée et ses 6 formes
   components/ShapeCard.astro     une forme, lien ou visuel décoratif
-  data/guests.json               liste des invités (généré depuis l'Excel)
+  data/guests.json               liste des invités (généré par import_guests.py)
   data/guests.ts                 accès typé à guests.json
   data/shapes.ts                 les 6 formes : image, libellé, destination
   layouts/BaseLayout.astro       <html>, meta tags, styles globaux
@@ -54,6 +66,7 @@ src/
   pages/index.astro              enveloppe, mot de passe, hub des formes
   pages/rsvp.astro               formulaire de confirmation de présence
   pages/infos-pratiques.astro    infos pratiques et hébergements
+  pages/programme.astro          déroulé du samedi et du dimanche
   pages/dress-code.astro         dress code
   pages/a-venir.astro            page d'attente pour les photos
   pages/api/check-password.ts    POST — vérifie SITE_PASSWORD côté serveur
@@ -86,29 +99,32 @@ Déclarées dans `astro.config.mjs` (`env.schema`) et donc typées via
 Suit l'ordre du devbook §4.
 
 - [x] 1. Scaffold Astro + Tailwind + adapter Vercel
-- [ ] 2. Conversion de l'Excel en `src/data/guests.json`
+- [x] 2. Conversion du Sheet en `src/data/guests.json` (liste provisoire)
 - [x] 3. Page d'accueil statique (enveloppe, sans animation)
 - [ ] 4. Route `/api/check-password` + déverrouillage côté client
 - [ ] 5. Timeline GSAP de la séquence d'ouverture
-- [ ] 6. Contenu des pages Infos pratiques, Dress code, À venir
+- [x] 6. Contenu des pages Infos pratiques, Programme, Dress code, À venir
 - [ ] 7. Formulaire RSVP + `/api/rsvp` + Resend + stockage
 - [ ] 8. Tests responsive (version allégée de l'animation sur mobile)
 - [ ] 9. Achat et configuration DNS du domaine sur Vercel
 
 ### Reste à fournir par Lucie
 
-- Le texte définitif des pages Infos pratiques et Dress code.
 - La photo du domaine pour le fond de la page d'accueil (un dégradé vert
   provisoire tient la place dans `index.astro`).
-- Le fichier Excel des invités (nom, email, hébergement).
+- La **liste définitive des invités** : celle importée est provisoire (90 noms,
+  aucun email, 4 entrées du type « sa meuf ? » à clarifier). Détail des
+  ambiguïtés dans [`docs/sources-lucie.md`](./docs/sources-lucie.md).
 
 ### Décisions en attente
 
-- Les formes « Programme » et « Invit » sont pour l'instant purement
-  décoratives, l'option la plus fidèle à la demande de Lucie. L'alternative
-  (clic ouvrant une lightbox) reste ouverte : `Shape.href` vaut `null` pour
-  ces deux formes, il suffirait d'ajouter un mode d'affichage dans
-  `src/data/shapes.ts`.
+- La forme « Invit » reste purement décorative (`href: null`), fidèle à la
+  demande de Lucie. L'alternative (clic ouvrant une lightbox) reste ouverte :
+  il suffirait d'ajouter un mode d'affichage dans `src/data/shapes.ts`.
+  « Programme » a été tranché dans l'autre sens : le texte reçu était trop long
+  pour tenir dans le visuel, la forme mène donc à `/programme`.
+- Les pages internes ne sont **pas** protégées par le mot de passe : seule
+  l'accueil l'est. À arbitrer si les URLs ne doivent pas être partageables.
 - L'équilibre visuel de la grille : « Appareil photo » (ratio 1,70) et
   « Dress code » (1,03) paraissent plus petits que les quatre formes en
   portrait (0,62 à 0,71). À arbitrer avec Lucie.

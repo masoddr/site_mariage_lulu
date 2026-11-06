@@ -13,7 +13,39 @@
   --color-paper: #e9e7e1;
   --color-ink: #1a1a18;
 
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  /* Body copy: Times New Roman, demandé par Lucie. */
+  --font-serif: "Times New Roman", Times, Georgia, serif;
+  /* Titres et jours du programme: Billa Mount, demandé par Lucie. */
+  --font-display: "Billa Mount", "Times New Roman", Times, serif;
+}
+
+/*
+ * Billa Mount draws long ascenders and swashes that overshoot a normal line
+ * box and collide with the next element. `.title` carries the font *and* the
+ * leading, so no heading can pick up one without the other — the `leading`
+ * declaration lives here rather than on the elements because a `text-*`
+ * utility ships its own line-height and would otherwise win.
+ */
+@layer utilities {
+  .title {
+    font-family: var(--font-display);
+    line-height: 1.9;
+  }
+}
+
+/*
+ * Billa Mount est une police sous licence : le fichier n'est pas versionné.
+ * Déposer billa-mount.woff2 (et .woff) dans public/fonts/ ; tant qu'il manque,
+ * le navigateur retombe silencieusement sur la pile de secours ci-dessus.
+ */
+@font-face {
+  font-family: "Billa Mount";
+  src:
+    url("/fonts/billa-mount.woff2") format("woff2"),
+    url("/fonts/billa-mount.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 /* Accessibility: users who ask for less motion get no animation at all. */

@@ -26,10 +26,18 @@ pnpm-debug.log*
 # editors
 .idea/
 
-# Raw assets as received from Lucie (unsorted names, duplicates).
-# The canonical, renamed copies are committed under public/images/.
+# Raw assets as received from Lucie (unsorted names, duplicates, and a 100 Mo
+# Illustrator package). The canonical, renamed copies are committed under
+# assets-source/, the fonts under public/fonts/ — see docs/sources-lucie.md.
 resitemariage/
 sitemariage/
+docs/sources/da-mariage-lulax/
 
 # captures de vérification (locales, non versionnées)
 .captures/
+
+# Planche de contact générée pour identifier les visuels du Drive (jetable).
+public/_planche/
+
+# Config de lancement locale : chemin nvm absolu, propre à la machine.
+.claude/

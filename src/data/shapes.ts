@@ -10,8 +10,8 @@ import programme from '../assets/images/shapes/programme.png';
 /**
  * One of the six shapes Lucie drew, posed on the letter.
  *
- * Four of them are links to an inner page; `programme` and `invit` are pure
- * visuals whose artwork already carries the final text (devbook §1.4).
+ * Cinq d'entre elles mènent à une page interne ; `invit` reste un pur visuel
+ * dont l'artwork porte déjà le texte final (devbook §1.4).
  */
 export interface Shape {
   /** Stable identifier, also used as the DOM id targeted by the GSAP timeline. */
@@ -53,7 +53,7 @@ export const shapes: readonly Shape[] = [
     id: 'programme',
     label: 'Programme du week-end',
     image: programme,
-    href: null,
+    href: '/programme',
   },
   {
     id: 'invit',
