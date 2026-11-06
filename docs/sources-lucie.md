@@ -22,10 +22,18 @@ réellement utilisés par le site en sont sortis et versionnés :
 |---|---|---|
 | `Fonts/BillaMount-Regular.ttf` | `public/fonts/billa-mount.woff2` + `.woff` | les titres, via le `@font-face` de `global.css` |
 | `Links/Image 13-10-2026 à 13.53.png` | `assets-source/dress-code/couleurs.png` | les 3 pastilles de la page Dress code |
-| `PNG/Fichier 6.png` (tournesol) | `assets-source/decor/tournesol.png` | pas encore utilisé |
-| `PNG/Fichier 5.png` (cartouche « Domaine Verdé, Vacquiers 31340 ») | `assets-source/decor/cartouche-domaine.png` | pas encore utilisé |
-| `PNG/Fichier 35.png` (enveloppe + carton « Lucie & Lucas ») | `assets-source/decor/enveloppe-photo.png` | pas encore utilisé |
-| `PNG/Fichier 1.png` (polaroid du couple) | `assets-source/decor/polaroid-lulu.png` | pas encore utilisé |
+
+**Visuels repérés mais non versionnés.** Ils pèsent 9 Mo et ne servent encore
+nulle part ; ils restent dans le Drive plutôt que dans le dépôt. Pour en
+utiliser un, le copier dans `assets-source/decor/` puis relancer
+`python scripts/prepare_assets.py` :
+
+| Fichier du dossier Drive | Ce que c'est |
+|---|---|
+| `PNG/Fichier 6.png` | un tournesol à l'aquarelle |
+| `PNG/Fichier 5.png` | un cartouche ovale « Domaine Verdé — Vacquiers, 31340 » |
+| `PNG/Fichier 35.png` | une enveloppe ouverte avec le carton « Lucie & Lucas » |
+| `PNG/Fichier 1.png` | un polaroid du couple |
 
 La conversion de la police se refait avec `fontTools` :
 
