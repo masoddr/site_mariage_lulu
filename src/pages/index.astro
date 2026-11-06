@@ -1,44 +1,83 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE_PASSWORD } from 'astro:env/server';
+
 import Envelope from '../components/Envelope.astro';
 import Letter from '../components/Letter.astro';
+import PasswordGate from '../components/PasswordGate.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SESSION_COOKIE, isSessionTokenValid } from '../lib/session';
+import type { HomeMode } from '../scripts/unlock';
 
-/*
- * Devbook step 3: static layout only. No password gate, no GSAP timeline.
- *
- * The two states of the opening sequence are laid out one after the other so
- * both can be checked visually. Step 5 turns them into a single screen: the
- * letter starts hidden and emerges from the envelope on a GSAP timeline.
- */
+// The page is rendered per request: what it contains depends on whether the
+// visitor holds a valid unlock session, so the letter cannot be read from the
+// page source while locked.
+export const prerender = false;
+
+const unlocked = await isSessionTokenValid(
+  Astro.cookies.get(SESSION_COOKIE)?.value,
+  SITE_PASSWORD,
+);
+
+// `?animation` replays the sequence for an already-unlocked visitor, which is
+// handy to review the choreography without clearing cookies.
+const replay = Astro.url.searchParams.has('animation');
+
+const mode: HomeMode = !unlocked ? 'locked' : replay ? 'replay' : 'open';
+
+// The sequence is about to run, so the letter must start hidden. Doing it with
+// an inline style rather than from JS avoids a flash of the open letter.
+const willAnimate = mode !== 'open';
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
 <BaseLayout title="Accueil">
-  {/*
-    Placeholder backdrop. Swap for the estate photo (with the slow Ken Burns
-    effect of devbook §1.1) once Lucie provides it.
-  */}
-  <div
-    class="fixed inset-0 -z-10 bg-linear-to-b from-forest-deep via-forest to-forest-deep"
-    aria-hidden="true"
-  >
-    <div class="absolute inset-0 bg-ink/20"></div>
-  </div>
-
-  <main>
-    <section
-      class="flex min-h-dvh flex-col items-center justify-center px-6 py-16"
-      aria-labelledby="etat-initial"
+  <div data-home data-mode={mode}>
+    {/*
+      Placeholder backdrop. Swap for the estate photo, with the slow Ken Burns
+      effect of devbook §1.1, once Lucie provides it.
+    */}
+    <div
+      data-backdrop
+      class="fixed inset-0 -z-10 bg-linear-to-b from-forest-deep via-forest to-forest-deep"
+      style={mode === 'open' ? 'filter:brightness(0.55)' : undefined}
+      aria-hidden="true"
     >
-      <h2 id="etat-initial" class="sr-only">Votre invitation</h2>
-      <Envelope class="w-full max-w-lg" />
-      <p class="mt-10 text-center text-sm tracking-widest text-paper/70 uppercase">
-        Étape 4 : le champ mot de passe apparaîtra ici
-      </p>
-    </section>
+      <div class="absolute inset-0 bg-ink/20"></div>
+    </div>
 
-    <section class="px-4 pb-24 sm:px-6" aria-labelledby="etat-final">
-      <h2 id="etat-final" class="sr-only">L'invitation dépliée</h2>
-      <Letter class="mx-auto max-w-5xl" />
-    </section>
-  </main>
+    {
+      willAnimate && (
+        <div
+          data-envelope-stage
+          class="fixed inset-0 z-10 flex flex-col items-center justify-center gap-10 px-6"
+        >
+          <Envelope class="w-full max-w-md" />
+          {mode === 'locked' && <PasswordGate />}
+        </div>
+      )
+    }
+
+    {/*
+      Sits above the envelope so the letter unfolds over it rather than below
+      the fold. While hidden by `visibility` it takes no pointer events, which
+      keeps the password field clickable.
+    */}
+    <div
+      data-letter-slot
+      class="fixed inset-0 z-20 overflow-y-auto overscroll-contain px-4 py-10 sm:px-6"
+      style={willAnimate ? 'visibility:hidden' : undefined}
+    >
+      {unlocked && <Letter class="mx-auto max-w-5xl" />}
+    </div>
+  </div>
 </BaseLayout>
+
+<script>
+  import { initHomePage, type HomeMode } from '../scripts/unlock';
+
+  // The server decides the mode; it travels through a data attribute because
+  // Astro bundles this script as a module, where `document.currentScript` is null.
+  const root = document.querySelector<HTMLElement>('[data-home]');
+  initHomePage((root?.dataset.mode as HomeMode | undefined) ?? 'locked');
+</script>

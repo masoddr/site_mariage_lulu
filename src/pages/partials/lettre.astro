@@ -1,0 +1,29 @@
+---
+import { SITE_PASSWORD } from 'astro:env/server';
+
+import Letter from '../../components/Letter.astro';
+import { SESSION_COOKIE, isSessionTokenValid } from '../../lib/session';
+
+// Rendered on demand, and returned as a bare fragment rather than a document.
+export const prerender = false;
+export const partial = true;
+
+/*
+ * The letter markup lives behind the password gate: it is fetched by the client
+ * only once `POST /api/check-password` has issued a valid session cookie. That
+ * is what makes the gate real rather than cosmetic — a locked visitor cannot
+ * read the wedding details in the page source.
+ */
+const unlocked = await isSessionTokenValid(
+  Astro.cookies.get(SESSION_COOKIE)?.value,
+  SITE_PASSWORD,
+);
+
+if (!unlocked) {
+  return new Response(null, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+}
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+---
+
+<Letter class="mx-auto max-w-5xl" />
