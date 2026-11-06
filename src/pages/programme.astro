@@ -1,0 +1,49 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+
+/** Un jour du week-end et sa suite d'étapes, dans l'ordre chronologique. */
+const days = [
+  {
+    name: 'Samedi',
+    steps: [
+      { time: '15h', label: 'Ouverture des portes du domaine' },
+      { time: '16h', label: 'Début de la cérémonie' },
+      { time: '17h30', label: 'Photos de groupe' },
+      { time: '18h', label: "Vin d'honneur" },
+      { time: '20h', label: 'Repas' },
+    ],
+    /** Mention libre affichée sous les étapes, sans horaire. */
+    note: 'Soirée dansante',
+  },
+  {
+    name: 'Dimanche',
+    steps: [{ time: '10h30', label: 'Brunch' }],
+    note: null,
+  },
+];
+---
+
+<PageLayout title="Programme">
+  {
+    days.map((day) => (
+      <section class="mt-10 first:mt-0">
+        <h2 class="title text-2xl text-forest sm:text-3xl">{day.name}</h2>
+
+        <dl class="mt-4 space-y-3">
+          {day.steps.map((step) => (
+            <div class="flex gap-4 border-b border-forest/10 pb-3">
+              <dt class="w-16 shrink-0 text-forest">{step.time}</dt>
+              <dd class="text-forest/80">{step.label}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {day.note && (
+          <p class="mt-5 text-center tracking-wide text-forest/80">
+            — {day.note} —
+          </p>
+        )}
+      </section>
+    ))
+  }
+</PageLayout>

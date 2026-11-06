@@ -1,20 +1,31 @@
 ---
+import { Image } from 'astro:assets';
+
+import couleurs from '../assets/images/dress-code/couleurs.png';
 import PageLayout from '../layouts/PageLayout.astro';
 ---
 
 <PageLayout title="Dress code">
-  <p class="text-forest/70">
-    Contenu de remplacement : le texte définitif n'a pas encore été fourni par
-    Lucie (devbook §2bis).
+  <!--
+    The artwork is scanned watercolour on opaque white paper. `multiply` drops
+    that white onto the ivory background while keeping the paper grain, which a
+    transparent PNG would have lost. `prepare_assets.py` white-balances the scan
+    so the paper lands on pure white and leaves no visible rectangle.
+  -->
+  <Image
+    src={couleurs}
+    alt="Trois pastilles aquarellées : bleu ciel, vert olive, jaune beurre."
+    class="w-full max-w-xl mix-blend-multiply"
+    widths={[480, 768, couleurs.width]}
+    sizes="(max-width: 640px) 100vw, 36rem"
+  />
+
+  <p class="mt-8 text-forest/80">
+    Le bleu ciel, le vert olive et le jaune beurre indiqués ci-dessus sont les
+    couleurs dédiées à la team d'honneur et aux témoins des mariés.
   </p>
-
-  <section class="mt-10">
-    <h2 class="text-xl text-forest">Le thème</h2>
-    <p class="mt-2 text-forest/70">À compléter.</p>
-  </section>
-
-  <section class="mt-10">
-    <h2 class="text-xl text-forest">À éviter</h2>
-    <p class="mt-2 text-forest/70">À compléter.</p>
-  </section>
+  <p class="mt-3 text-forest/80">
+    Quant aux invités, n'hésitez pas à oser la couleur, qu'elle soit pastel ou
+    pétillante !
+  </p>
 </PageLayout>
