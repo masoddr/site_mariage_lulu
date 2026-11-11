@@ -33,6 +33,24 @@ export default defineConfig({
         access: 'secret',
         optional: true,
       }),
+      // Google service account that appends RSVP answers to Lucie's sheet.
+      // Optional for the same reason as the mail secrets: an unconfigured
+      // integration must degrade, never take the site down.
+      GOOGLE_CLIENT_EMAIL: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      GOOGLE_PRIVATE_KEY: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      RSVP_SPREADSHEET_ID: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
     },
   },
 

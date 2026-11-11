@@ -28,16 +28,16 @@ export interface MailConfig {
 }
 
 /**
- * Persist an answer.
+ * Trace an answer in the function logs.
  *
- * For now this writes one structured line to the function logs, which Vercel
- * retains and makes searchable — enough to never lose an answer, and enough to
- * reconcile by hand if a mail goes missing. This is the single place to change
- * when the answers should land in a Google Sheet or a database instead.
+ * This is NOT storage: Vercel keeps runtime logs for one hour on the Hobby
+ * plan. It only helps debugging a submission that just happened. The durable
+ * copies are the spreadsheet row and the notification mail, and an answer that
+ * gets neither is reported as a failure to the guest.
  *
  * @param payload - An already-validated submission.
  */
-export function recordRsvp(payload: RsvpPayload): void {
+export function traceRsvp(payload: RsvpPayload): void {
   console.log(`RSVP ${JSON.stringify(payload)}`);
 }
 

@@ -12,6 +12,8 @@ interface RsvpResponse {
   error?: string;
   message?: string;
   field?: string;
+  /** Durable copies written by the server: spreadsheet row, mail. */
+  stored?: boolean;
   mailed?: boolean;
 }
 
@@ -168,6 +170,8 @@ form?.addEventListener('submit', async (event) => {
       success.hidden = false;
     }
     if (successDetail) {
+      // A 200 means at least one durable copy was written, so the answer is
+      // safe either way; only the mail sentence changes.
       successDetail.textContent = result.mailed
         ? 'Votre réponse est enregistrée, et un e-mail de confirmation vient de vous être envoyé.'
         : 'Votre réponse est bien enregistrée. L’e-mail de confirmation, lui, n’a pas pu partir — ne vous inquiétez pas, nous avons bien reçu votre réponse.';
