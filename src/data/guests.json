@@ -149,7 +149,8 @@
     "hebergement": "hotel",
     "logement": "2 chambres de 4",
     "sides": [
-      "lucas"
+      "lucas",
+      "lucie"
     ],
     "needs_review": false
   },
@@ -667,26 +668,6 @@
     "needs_review": false
   },
   {
-    "name": "LOU ANN",
-    "email": null,
-    "hebergement": "libre",
-    "logement": null,
-    "sides": [
-      "lucie"
-    ],
-    "needs_review": false
-  },
-  {
-    "name": "lucie",
-    "email": null,
-    "hebergement": "hotel",
-    "logement": "5 chambres doubles",
-    "sides": [
-      "commun"
-    ],
-    "needs_review": false
-  },
-  {
     "name": "ALEX",
     "email": null,
     "hebergement": "hotel",
@@ -703,16 +684,6 @@
     "logement": null,
     "sides": [
       "lucie"
-    ],
-    "needs_review": false
-  },
-  {
-    "name": "lucas",
-    "email": null,
-    "hebergement": "hotel",
-    "logement": "5 chambres doubles",
-    "sides": [
-      "commun"
     ],
     "needs_review": false
   },

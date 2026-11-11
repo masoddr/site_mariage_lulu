@@ -45,6 +45,15 @@ LODGING_HEADER_ROWS = {0}
 # Lucie rather than guests. Flagged, never dropped.
 PLACEHOLDER = re.compile(r"\?|^\+\s*1|^1 chambre", re.IGNORECASE)
 
+# The couple themselves, listed in the COMMUN column so Lucie can count heads.
+# They have no reason to pick their own name in the RSVP dropdown.
+EXCLUDED = {"lucie", "lucas"}
+
+# Spellings the sheet uses for one and the same person. Without this, "LOU ANN"
+# and "LOUANN" become two guests — and only one of them carries the bed Lucie
+# booked. Keys and values are both `normalise`d forms.
+ALIASES = {"lou ann": "louann"}
+
 
 def normalise(name: str) -> str:
     """Key used to match the same person across columns.
@@ -54,7 +63,8 @@ def normalise(name: str) -> str:
     """
     stripped = unicodedata.normalize("NFKD", name)
     stripped = "".join(c for c in stripped if not unicodedata.combining(c))
-    return re.sub(r"\s+", " ", stripped).strip().casefold()
+    key = re.sub(r"\s+", " ", stripped).strip().casefold()
+    return ALIASES.get(key, key)
 
 
 def main() -> None:
@@ -80,6 +90,8 @@ def main() -> None:
             if column >= len(row) or not (cell := row[column].strip()):
                 continue
             key = normalise(cell)
+            if key in EXCLUDED:
+                continue
             if key in seen:
                 # Same person listed on both sides: keep the first entry and
                 # record the second side instead of creating a duplicate.
