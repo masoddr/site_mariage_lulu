@@ -18,9 +18,21 @@ export default defineConfig({
   // Server secrets are never exposed to the client bundle.
   env: {
     schema: {
+      // Required: without it the home page cannot check the unlock session.
       SITE_PASSWORD: envField.string({ context: 'server', access: 'secret' }),
-      RESEND_API_KEY: envField.string({ context: 'server', access: 'secret' }),
-      NOTIFY_EMAIL: envField.string({ context: 'server', access: 'secret' }),
+      // Optional until the RSVP mails of devbook step 7 are implemented. Kept
+      // optional so a missing mail config can never 500 the whole site: the
+      // RSVP route degrades (answer stored, no mail sent) instead.
+      RESEND_API_KEY: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      NOTIFY_EMAIL: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
     },
   },
 

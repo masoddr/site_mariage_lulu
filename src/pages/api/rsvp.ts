@@ -10,7 +10,9 @@ export const prerender = false;
  *   1. validate the payload against `RsvpPayload`,
  *   2. store the answer (Google Sheet or Supabase),
  *   3. send a confirmation mail to the guest and a notification to Lucie
- *      via Resend, using `RESEND_API_KEY` and `NOTIFY_EMAIL`.
+ *      via Resend, using `RESEND_API_KEY` and `NOTIFY_EMAIL`. Both are
+ *      optional: when either is missing, skip step 3 and still answer 200 —
+ *      losing a mail must never cost us the answer itself.
  */
 export const POST: APIRoute = async () => {
   return new Response(JSON.stringify({ error: 'Not implemented yet' }), {
