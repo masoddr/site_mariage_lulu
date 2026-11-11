@@ -34,9 +34,10 @@
 }
 
 /*
- * Billa Mount est une police sous licence : le fichier n'est pas versionné.
- * Déposer billa-mount.woff2 (et .woff) dans public/fonts/ ; tant qu'il manque,
- * le navigateur retombe silencieusement sur la pile de secours ci-dessus.
+ * Billa Mount, la police des titres demandée par Lucie. Les fichiers sont dans
+ * public/fonts/ (voir docs/sources-lucie.md pour la conversion depuis le .ttf
+ * d'origine). Si jamais ils venaient à manquer, le navigateur retombe
+ * silencieusement sur la pile de secours déclarée dans --font-display.
  */
 @font-face {
   font-family: "Billa Mount";

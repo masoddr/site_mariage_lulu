@@ -120,7 +120,7 @@ Résultat mesuré : **5,1 Mo de PNG sources → 508 Ko de WebP servis**, toutes 
 4. Route API `/api/check-password` + logique client (fetch, gestion des erreurs, état "déverrouillé" en `sessionStorage`).
 5. Timeline GSAP de la séquence d'ouverture (enveloppe → lettre → formes), en itérant sur les easings/timings.
 6. Pages statiques : Infos pratiques, Dress Code, À venir (photos).
-7. Formulaire RSVP + route API `/api/rsvp` + intégration Resend + stockage des réponses.
+7. ~~Formulaire RSVP + route API `/api/rsvp` + intégration Resend + stockage des réponses.~~ ✅ **Fait**, avec deux réserves assumées : le stockage passe par les logs de fonction Vercel (`recordRsvp` dans `src/lib/notify.ts` est le seul point à changer pour basculer vers un Google Sheet), et la sauce est un champ libre tant que Lucie n'a pas envoyé la carte.
 8. Tests responsive (l'animation d'enveloppe est le point le plus risqué en mobile — prévoir une version allégée sur petits écrans).
 9. Achat + configuration DNS de `lemariagedeslulu` sur Vercel.
 

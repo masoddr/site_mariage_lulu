@@ -1,0 +1,170 @@
+---
+import { formatGuestName, selectableGuests } from '../data/guests';
+
+/*
+  Every guest's accommodation status rides along on its <option>, so switching
+  names rearranges the form without a round-trip. The list is public anyway —
+  the whole site sits behind the password gate.
+*/
+const fieldClass =
+  'w-full rounded-sm border border-forest/25 bg-paper/60 px-4 py-2.5 text-forest transition-colors focus:border-forest/60 focus:outline-none disabled:opacity-60';
+const labelClass = 'block text-xs uppercase tracking-[0.2em] text-forest/70';
+---
+
+<form data-rsvp-form class="max-w-xl" novalidate>
+  <div>
+    <label for="rsvp-guest" class={labelClass}>Votre nom</label>
+    <select id="rsvp-guest" name="guestName" required class:list={['mt-2', fieldClass]}>
+      <option value="" selected disabled>Choisissez votre nom…</option>
+      {
+        selectableGuests.map((guest) => (
+          <option
+            value={guest.name}
+            data-hebergement={guest.hebergement}
+            data-logement={guest.logement ?? ''}
+          >
+            {formatGuestName(guest.name)}
+          </option>
+        ))
+      }
+    </select>
+    <p class="mt-2 text-sm text-forest/60">
+      Votre nom n'apparaît pas ? Écrivez-nous, nous l'ajouterons.
+    </p>
+  </div>
+
+  <div class="mt-8">
+    <label for="rsvp-email" class={labelClass}>Votre e-mail</label>
+    <input
+      id="rsvp-email"
+      name="email"
+      type="email"
+      required
+      autocomplete="email"
+      placeholder="prenom@exemple.fr"
+      class:list={['mt-2', fieldClass]}
+    />
+    <p class="mt-2 text-sm text-forest/60">
+      Pour vous envoyer la confirmation de votre réponse.
+    </p>
+  </div>
+
+  <fieldset class="mt-8">
+    <legend class={labelClass}>Serez-vous des nôtres ?</legend>
+    <div class="mt-3 flex gap-3">
+      <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-sm border border-forest/25 px-4 py-3 text-forest">
+        <input type="radio" name="attending" value="oui" class="size-4 shrink-0 accent-forest" required />
+        <span>Avec joie !</span>
+      </label>
+      <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-sm border border-forest/25 px-4 py-3 text-forest">
+        <input type="radio" name="attending" value="non" class="size-4 shrink-0 accent-forest" required />
+        <span>Je ne pourrai pas</span>
+      </label>
+    </div>
+  </fieldset>
+
+  {/* Shown only to those who answered "oui": nothing below concerns the others. */}
+  <div data-attending-fields hidden>
+    <fieldset class="mt-8">
+      <legend class={labelClass}>Votre plat</legend>
+      <p class="mt-2 text-sm text-forest/60">
+        Un food truck vous servira des pâtes ou des gnocchis, avec la sauce de
+        votre choix.
+      </p>
+      <div class="mt-3 flex gap-3">
+        <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-sm border border-forest/25 px-4 py-3 text-forest">
+          <input type="radio" name="plat" value="pates" class="size-4 shrink-0 accent-forest" />
+          <span>Pâtes</span>
+        </label>
+        <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-sm border border-forest/25 px-4 py-3 text-forest">
+          <input type="radio" name="plat" value="gnocchis" class="size-4 shrink-0 accent-forest" />
+          <span>Gnocchis</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="mt-8">
+      <label for="rsvp-sauce" class={labelClass}>Votre sauce</label>
+      <input
+        id="rsvp-sauce"
+        name="sauce"
+        type="text"
+        maxlength="200"
+        placeholder="Tomate, pesto, carbonara…"
+        class:list={['mt-2', fieldClass]}
+      />
+      <p class="mt-2 text-sm text-forest/60">
+        La carte des sauces n'est pas encore arrêtée : dites-nous simplement vos
+        envies, ou laissez vide si vous n'avez pas de préférence.
+      </p>
+    </div>
+
+    <div class="mt-8">
+      <label for="rsvp-hebergement" class={labelClass}>Votre hébergement</label>
+      <select id="rsvp-hebergement" name="hebergement" class:list={['mt-2', fieldClass]}>
+        <option value="" selected disabled>Choisissez…</option>
+        <option value="tente">Je plante ma tente sur le domaine</option>
+        <option value="exterieur">Je me loge par mes propres moyens</option>
+        {/* Only ever selected by the script, for guests Lucie already booked. */}
+        <option value="hotel" data-hotel-option>Logement réservé par les mariés</option>
+      </select>
+
+      {/*
+        Guests Lucie already booked a bed for see the field disabled rather than
+        hidden, so they can check what was reserved for them.
+      */}
+      <p data-hotel-note hidden class="mt-2 text-sm text-forest/70"></p>
+
+      <p class="mt-2 text-sm text-forest/60">
+        Camping sur place, hôtel à 15 minutes, Airbnb alentour : tout est
+        détaillé dans les{' '}
+        <a
+          href="/infos-pratiques"
+          class="underline underline-offset-4 transition-opacity hover:opacity-70"
+          >infos pratiques</a
+        >.
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-8">
+    <label for="rsvp-message" class={labelClass}>Un mot pour les mariés ?</label>
+    <textarea
+      id="rsvp-message"
+      name="message"
+      rows="4"
+      maxlength="2000"
+      class:list={['mt-2', fieldClass]}></textarea>
+  </div>
+
+  <div class="mt-10 flex flex-wrap items-center gap-4">
+    <button
+      type="submit"
+      data-rsvp-submit
+      class="rounded-sm border border-forest bg-forest px-6 py-3 text-xs uppercase tracking-[0.2em] text-paper transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest disabled:opacity-50"
+    >
+      Envoyer ma réponse
+    </button>
+
+    {/*
+      `role="status"` rather than `role="alert"`: the same node carries the
+      "Envoi…" pending state, which should not interrupt a screen reader.
+    */}
+    <p
+      data-rsvp-message
+      role="status"
+      aria-live="polite"
+      class="min-h-5 text-sm text-forest/80"
+    >
+    </p>
+  </div>
+</form>
+
+{/* Replaces the form once the answer is in; never shown on a failed send. */}
+<div data-rsvp-success hidden class="max-w-xl">
+  <p class="title text-2xl text-forest">Merci, c'est noté !</p>
+  <p class="mt-3 text-forest/80" data-rsvp-success-detail></p>
+  <p class="mt-6 text-forest/80">
+    Une erreur dans votre réponse ? Écrivez-nous, on corrigera à la main.
+  </p>
+</div>

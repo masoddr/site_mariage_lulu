@@ -1,22 +1,45 @@
 import type { APIRoute } from 'astro';
+import { NOTIFY_EMAIL, RESEND_API_KEY } from 'astro:env/server';
+
+import { readMailConfig, recordRsvp, sendRsvpMails } from '../../lib/notify';
+import { validateRsvp } from '../../lib/rsvp';
 
 // Rendered on demand by the Vercel adapter; the rest of the site stays static.
 export const prerender = false;
 
-/**
- * Handle an RSVP submission: validate, persist, then notify.
- *
- * Scaffold stub (devbook step 7 will implement it):
- *   1. validate the payload against `RsvpPayload`,
- *   2. store the answer (Google Sheet or Supabase),
- *   3. send a confirmation mail to the guest and a notification to Lucie
- *      via Resend, using `RESEND_API_KEY` and `NOTIFY_EMAIL`. Both are
- *      optional: when either is missing, skip step 3 and still answer 200 —
- *      losing a mail must never cost us the answer itself.
- */
-export const POST: APIRoute = async () => {
-  return new Response(JSON.stringify({ error: 'Not implemented yet' }), {
-    status: 501,
-    headers: { 'Content-Type': 'application/json' },
+function json(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
+}
+
+/**
+ * Handle an RSVP submission: validate, record, then notify.
+ *
+ * The answer is recorded before any mail is attempted, and a mail failure is
+ * reported in the response (`mailed: false`) rather than turned into an error:
+ * once recorded, the guest's job is done and they should not be asked to retry.
+ */
+export const POST: APIRoute = async ({ request }) => {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: 'Requête invalide.' }, 400);
+  }
+
+  const validation = validateRsvp(body);
+  if (!validation.ok) {
+    return json({ ok: false, ...validation.error }, 422);
+  }
+
+  recordRsvp(validation.payload);
+
+  const mailed = await sendRsvpMails(
+    validation.payload,
+    readMailConfig(RESEND_API_KEY, NOTIFY_EMAIL),
+  );
+
+  return json({ ok: true, mailed }, 200);
 };

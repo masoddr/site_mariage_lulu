@@ -31,11 +31,23 @@ export interface Guest {
 /** Accommodation choices offered to a `libre` guest. */
 export type HebergementChoice = 'tente' | 'exterieur';
 
+/**
+ * Main course served by the food truck.
+ *
+ * Lucie's mail offers "pâtes ou gnocchis, accompagnés de la sauce de votre
+ * choix" without listing the sauces, so `sauce` stays a free-text field until
+ * she sends them; it then becomes a `select` without touching this shape.
+ */
+export type Plat = 'pates' | 'gnocchis';
+
 /** Payload accepted by `POST /api/rsvp`. */
 export interface RsvpPayload {
   guestName: string;
   email: string;
   attending: boolean;
-  hebergement: Hebergement | HebergementChoice;
+  /** All three are absent when `attending` is false: nothing left to choose. */
+  hebergement?: Hebergement | HebergementChoice;
+  plat?: Plat;
+  sauce?: string;
   message?: string;
 }
