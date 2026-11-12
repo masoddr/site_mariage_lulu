@@ -1,5 +1,5 @@
 ---
-import { formatGuestName, selectableGuests } from '../data/guests';
+import { selectableGuests } from '../data/guests';
 
 /*
   Every guest's accommodation status rides along on its <option>, so switching
@@ -23,7 +23,7 @@ const labelClass = 'block text-xs uppercase tracking-[0.2em] text-forest/70';
             data-hebergement={guest.hebergement}
             data-logement={guest.logement ?? ''}
           >
-            {formatGuestName(guest.name)}
+            {guest.name}
           </option>
         ))
       }
@@ -73,11 +73,11 @@ const labelClass = 'block text-xs uppercase tracking-[0.2em] text-forest/70';
       </p>
       <div class="mt-3 flex gap-3">
         <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-sm border border-forest/25 px-4 py-3 text-forest">
-          <input type="radio" name="plat" value="pates" class="size-4 shrink-0 accent-forest" />
+          <input type="radio" name="plat" value="pates" class="size-4 shrink-0 accent-forest" required />
           <span>Pâtes</span>
         </label>
         <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-sm border border-forest/25 px-4 py-3 text-forest">
-          <input type="radio" name="plat" value="gnocchis" class="size-4 shrink-0 accent-forest" />
+          <input type="radio" name="plat" value="gnocchis" class="size-4 shrink-0 accent-forest" required />
           <span>Gnocchis</span>
         </label>
       </div>
@@ -98,6 +98,43 @@ const labelClass = 'block text-xs uppercase tracking-[0.2em] text-forest/70';
         envies, ou laissez vide si vous n'avez pas de préférence.
       </p>
     </div>
+
+    <div class="mt-8">
+      <label for="rsvp-dessert" class={labelClass}>Votre dessert</label>
+      <input
+        id="rsvp-dessert"
+        name="dessert"
+        type="text"
+        maxlength="200"
+        class:list={['mt-2', fieldClass]}
+      />
+      <p class="mt-2 text-sm text-forest/60">
+        Les desserts ne sont pas encore arrêtés non plus. Une envie, une
+        allergie, un régime particulier ? C'est le moment de nous le dire.
+      </p>
+    </div>
+
+    <fieldset class="mt-8">
+      <legend class={labelClass}>Le brunch du dimanche</legend>
+      <p class="mt-2 text-sm text-forest/60">
+        Un brunch est prévu le dimanche à 10h30. Nous avons besoin de connaître
+        les quantités.
+      </p>
+      <div class="mt-3 flex gap-3">
+        <label
+          class="flex flex-1 cursor-pointer items-center gap-3 rounded-sm border border-forest/25 px-4 py-3 text-forest"
+        >
+          <input type="radio" name="brunch" value="oui" class="size-4 shrink-0 accent-forest" required />
+          <span>J'en serai</span>
+        </label>
+        <label
+          class="flex flex-1 cursor-pointer items-center gap-3 rounded-sm border border-forest/25 px-4 py-3 text-forest"
+        >
+          <input type="radio" name="brunch" value="non" class="size-4 shrink-0 accent-forest" required />
+          <span>Je repartirai avant</span>
+        </label>
+      </div>
+    </fieldset>
 
     <div class="mt-8">
       <label for="rsvp-hebergement" class={labelClass}>Votre hébergement</label>

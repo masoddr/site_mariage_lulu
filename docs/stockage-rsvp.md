@@ -2,7 +2,7 @@
 
 Une réponse validée est écrite à **deux endroits durables**, en parallèle :
 
-1. une ligne dans l'onglet `REPONSES SITE` du Sheet de Lucie ;
+1. la ligne de l'invité dans l'onglet **`fichier inscription`** du Sheet de Lucie ;
 2. deux mails envoyés par Resend — confirmation à l'invité, notification à `NOTIFY_EMAIL`.
 
 Si **l'un des deux** réussit, l'invité voit « Merci, c'est noté ! ». Si **les deux**
@@ -12,25 +12,49 @@ un remerciement alors que sa réponse est perdue serait un mensonge.
 > ⚠️ Les logs de fonction Vercel ne sont **pas** un stockage. Leur rétention est
 > d'**une heure** en plan Hobby. `traceRsvp()` n'existe que pour déboguer une
 > soumission qui vient d'avoir lieu. Tant qu'aucune des deux intégrations
-> ci-dessous n'est configurée, **n'envoyez pas le lien aux invités**.
+> ci-dessous n'est configurée, **n'envoyez pas le lien aux invités** : toute
+> réponse serait refusée.
 
 ---
 
-## 1. L'onglet qui reçoit les réponses
+## 1. L'onglet `fichier inscription`
 
-À créer une seule fois dans le Sheet « Mariage des Lulu », à côté de `LAÏQUE` :
+Rien à créer : l'onglet existe, avec **une ligne par invité** que le site vient
+remplir. Sa structure, telle que le code l'attend :
 
-- nom de l'onglet : **`REPONSES SITE`** (exactement, c'est `SHEET_TAB` dans
-  `src/lib/sheets.ts`) ;
-- première ligne, les 8 en-têtes, dans cet ordre :
+| | A | B | C | D | E | F | G |
+|---|---|---|---|---|---|---|---|
+| **ligne 1** | | | | `REPAS` (fusionnée) | | | |
+| **ligne 2** | `Invités` | `Présence` | `Logement` | `Plat` | `Sauce` | `Dessert` | `Brunch lendemain` |
+| **ligne 3+** | un invité par ligne | | | | | | |
 
-  | A | B | C | D | E | F | G | H |
-  |---|---|---|---|---|---|---|---|
-  | Date | Invité | E-mail | Présent | Plat | Sauce | Hébergement | Message |
+Le site écrit **uniquement** dans les colonnes **B, D, E, F et G** de la ligne
+concernée. Il ne touche jamais :
 
-Le code n'écrit jamais dans les autres onglets : il ajoute des lignes à la fin
-de `REPONSES SITE!A:H`, rien d'autre. La liste d'invités de Lucie n'est donc
-jamais modifiée par le site.
+- la colonne **A**, les noms ;
+- la colonne **C**, `Logement` — c'est la donnée de planification de Lucie
+  (`HOTEL OFFERT`, `CAMPING CAR`, `DOMAINE VERDE`). Le site la **lit** pour
+  verrouiller le champ hébergement des invités déjà logés, mais ne l'écrit
+  jamais. Le choix d'hébergement d'un invité libre part dans le mail seulement.
+
+Les valeurs sont écrites en majuscules (`OUI`, `PATES`, `GNOCCHIS`) pour
+ressembler à ce que Lucie saisit déjà à la main.
+
+Le **« mot pour les mariés » ne va pas dans le Sheet** : il n'a pas de colonne,
+et il part uniquement dans les mails. Si Resend n'est pas configuré, ce mot est
+perdu — les réponses structurées, elles, survivent dans le Sheet.
+
+### Comment la bonne ligne est trouvée
+
+À chaque soumission, le site relit la colonne A et cherche le nom. Il ne stocke
+**pas** un numéro de ligne dans `guests.json` : Lucie trie et insère des lignes
+dans cet onglet, et un index périmé écrirait la réponse d'un invité sur la ligne
+d'un autre. La comparaison ignore la casse, les accents et les espaces en trop.
+
+Corollaire : **renommer quelqu'un dans la colonne A casse le lien** avec
+`guests.json` tant que l'import n'a pas été rejoué (`python scripts/import_guests.py`
+après avoir ré-exporté le CSV). Le symptôme est explicite dans les logs :
+`no row for "..." in fichier inscription`.
 
 ## 2. Le compte de service Google
 
@@ -74,9 +98,17 @@ obligatoire.
 
 Soumettre une réponse de test depuis `/rsvp`, puis :
 
-- une ligne doit apparaître dans `REPONSES SITE` ;
+- la ligne de l'invité choisi doit se remplir dans `fichier inscription` ;
 - la réponse JSON de `POST /api/rsvp` contient `"stored": true`.
 
+> Pensez à effacer la ligne de test ensuite, sinon elle compte comme une vraie
+> réponse.
+
 Si `stored` est `false`, la cause exacte est dans les logs Vercel, préfixée
-`RSVP spreadsheet append failed:` — le plus souvent un 403 (Sheet non partagé
-avec le robot) ou un 400 (nom d'onglet différent de `REPONSES SITE`).
+`RSVP spreadsheet write failed:` :
+
+| Message | Cause |
+|---|---|
+| `403` | le Sheet n'est pas partagé avec l'adresse du compte de service |
+| `no row for "..."` | le nom de `guests.json` ne correspond plus à la colonne A |
+| `400` | l'onglet a été renommé (le code attend `fichier inscription`) |

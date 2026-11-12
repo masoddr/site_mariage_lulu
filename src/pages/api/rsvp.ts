@@ -9,7 +9,7 @@ import {
 
 import { readMailConfig, sendRsvpMails, traceRsvp } from '../../lib/notify';
 import { validateRsvp } from '../../lib/rsvp';
-import { appendRsvpRow, readSheetConfig } from '../../lib/sheets';
+import { readSheetConfig, writeRsvpRow } from '../../lib/sheets';
 
 // Rendered on demand by the Vercel adapter; the rest of the site stays static.
 export const prerender = false;
@@ -47,10 +47,9 @@ export const POST: APIRoute = async ({ request }) => {
   traceRsvp(payload);
 
   const [stored, mailed] = await Promise.all([
-    appendRsvpRow(
+    writeRsvpRow(
       payload,
       readSheetConfig(GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, RSVP_SPREADSHEET_ID),
-      new Date().toISOString(),
     ),
     sendRsvpMails(payload, readMailConfig(RESEND_API_KEY, NOTIFY_EMAIL)),
   ]);

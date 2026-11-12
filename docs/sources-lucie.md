@@ -10,7 +10,7 @@ arbitrage a été pris, et il est noté dans la section « Écarts assumés » e
 | Quoi | Lien | Récupéré dans |
 |---|---|---|
 | Drive des visuels (dossier Illustrator `DA-Mariage-Lulax`) | https://drive.google.com/drive/folders/1syO35_KoIUEEdDTxz7DRla0dowNx7Mrq | `docs/sources/da-mariage-lulax/` |
-| Google Sheet de la liste des invités | https://docs.google.com/spreadsheets/d/1hnOdTrLM1wTOViaL8vFh3Dtkh7_tbw4bx9H7FBDsh_M/edit?gid=0#gid=0 | `docs/sources/invites-laique.csv` |
+| Google Sheet de la liste des invités (onglet `fichier inscription`) | https://docs.google.com/spreadsheets/d/1hnOdTrLM1wTOViaL8vFh3Dtkh7_tbw4bx9H7FBDsh_M/edit | `docs/sources/fichier-inscription.csv` |
 
 ### Ce qui a été extrait du dossier Drive
 
@@ -53,22 +53,31 @@ photo du domaine attendue pour le fond de l'accueil — à confirmer avec Lucie.
 
 ### Le Sheet des invités
 
-`docs/sources/invites-laique.csv` est l'export brut, converti par
-`python scripts/import_guests.py` vers `src/data/guests.json` (90 invités,
-30 déjà logés). Attention, ce n'est **pas** encore la liste définitive : Lucie
-a écrit « je t'envoie la liste des invités pour le formulaire dès qu'on aura
-tranché sur les derniers invités ». Points à clarifier avec elle :
+La source est l'onglet **`fichier inscription`**, exporté dans
+`docs/sources/fichier-inscription.csv` et converti par
+`python scripts/import_guests.py` vers `src/data/guests.json` (89 invités,
+31 déjà logés). C'est aussi l'onglet que le site remplit quand quelqu'un
+répond — voir `docs/stockage-rsvp.md`.
 
-- 4 entrées sont des réservations de place, pas des noms : `Nathalie?`,
-  `sa meuf?`, `+ 1 de Marianne ?`, `+1 de maxime` — marquées `needs_review`.
 - Le CSV n'a **aucun email** : le champ reste `null`, c'est le formulaire RSVP
   qui le collectera.
-- La colonne M du Sheet (ELISE, MICHAEL, PAUL…, numérotée de 1 à 22) n'a pas
-  d'en-tête : plan de table ? comptage ? Elle est **ignorée** par le script.
-- « 5 chambres doubles / 2 chambres de 4 / 1 chambre de 8 / chez ju /
-  camping car » sont recopiés tels quels dans le champ `logement` ; toute
-  personne y figurant est marquée `hebergement: "hotel"` (= déjà logée, donc
-  champ grisé dans le formulaire).
+- La colonne `Logement` (`HOTEL OFFERT`, `CAMPING CAR`, `DOMAINE VERDE`) est
+  recopiée telle quelle dans le champ `logement` ; toute personne y figurant est
+  marquée `hebergement: "hotel"` (= déjà logée, donc champ grisé dans le
+  formulaire). Le site n'écrit **jamais** dans cette colonne.
+- Lucie et Lucas ont leur propre ligne et sont exclus de la liste déroulante.
+
+#### Pourquoi pas l'onglet `LAÏQUE`
+
+Le premier import lisait l'onglet `LAÏQUE`, qui ne contient que des **prénoms**.
+C'était une erreur de fond : **12 prénoms y sont portés par 25 personnes
+différentes** (deux Corinne, deux Fabienne, trois Maxime…). Le script les
+fusionnait donc silencieusement en un seul invité, et ces personnes n'avaient
+aucun moyen de s'identifier dans le formulaire — la première à choisir
+« CORINNE » répondait à la place de l'autre. `fichier inscription` porte les
+noms complets et lève l'ambiguïté. L'ancien export reste versionné dans
+`docs/sources/invites-laique.csv` à titre d'historique, mais **plus rien ne le
+lit**.
 
 ---
 

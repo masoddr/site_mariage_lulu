@@ -1,14 +1,20 @@
-"""Convert Lucie's guest spreadsheet into `src/data/guests.json`.
+"""Convert Lucie's registration sheet into `src/data/guests.json`.
 
-Source: `docs/sources/invites-laique.csv`, exported from the Google Sheet listed
-in `docs/sources-lucie.md`. Re-run after each new export:
+Source: `docs/sources/fichier-inscription.csv`, exported from the
+`fichier inscription` tab of the Google Sheet listed in `docs/sources-lucie.md`.
+Re-run after each new export:
 
     python scripts/import_guests.py
 
-The sheet is a planning grid, not a database: three name columns (Lucie's side,
-common, Lucas's side) followed by lodging columns listing who already has a bed.
-This script flattens it, and deliberately keeps every oddity visible rather than
-silently cleaning it up — see `needs_review` below.
+This replaces an earlier import built on the `LAÏQUE` tab, which listed first
+names only. That was not merely untidy: twelve first names are shared by
+twenty-five different people (two Corinne, three Maxime...), so the old list
+silently merged them and those guests had no way to identify themselves. The
+registration tab carries full names and is the only unambiguous source.
+
+The tab is a tracking grid — one row per guest, which the site fills in as
+answers arrive — so this script only reads its two stable columns: the name and
+the lodging Lucie has already arranged.
 """
 
 from __future__ import annotations
@@ -20,98 +26,73 @@ import unicodedata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "docs" / "sources" / "invites-laique.csv"
+CSV_PATH = ROOT / "docs" / "sources" / "fichier-inscription.csv"
 JSON_PATH = ROOT / "src" / "data" / "guests.json"
 
-# Column index -> side of the family. Row 2 of the sheet carries these headers.
-SIDE_COLUMNS = {0: "lucie", 1: "commun", 2: "lucas"}
+# Row 0 spans "REPAS" over the meal columns, row 1 holds the real headers.
+HEADER_ROWS = {0, 1}
 
-# Column index -> lodging already arranged by Lucie, verbatim from row 1.
-LODGING_COLUMNS = {
-    5: "chez ju",
-    6: "camping car",
-    8: "5 chambres doubles",
-    9: "2 chambres de 4",
-    10: "1 chambre de 8",
-}
+NAME_COLUMN = 0
+LODGING_COLUMN = 2
 
-# Row 0 holds the lodging titles, row 1 the three side titles ("Lucie",
-# "COMMUN", "Lucas"). The two sets differ: row 1 already lists names in the
-# lodging columns (JULIANA, DENIS), so it must be skipped for sides only.
-SIDE_HEADER_ROWS = {0, 1}
-LODGING_HEADER_ROWS = {0}
+# The couple themselves. They have their own row like everyone else, and no
+# reason to pick their own name in the RSVP dropdown.
+EXCLUDED = {"lucie galpern", "lucas brugnoli"}
 
-# Entries that are placeholders for someone not yet identified, or notes to
-# Lucie rather than guests. Flagged, never dropped.
-PLACEHOLDER = re.compile(r"\?|^\+\s*1|^1 chambre", re.IGNORECASE)
-
-# The couple themselves, listed in the COMMUN column so Lucie can count heads.
-# They have no reason to pick their own name in the RSVP dropdown.
-EXCLUDED = {"lucie", "lucas"}
-
-# Spellings the sheet uses for one and the same person. Without this, "LOU ANN"
-# and "LOUANN" become two guests — and only one of them carries the bed Lucie
-# booked. Keys and values are both `normalise`d forms.
-ALIASES = {"lou ann": "louann"}
+# Entries that are a note to Lucie rather than an identified guest. The
+# registration tab has none today — she resolved the "+1" placeholders of the
+# LAÏQUE tab into real names — but a new export may bring some back.
+PLACEHOLDER = re.compile(r"\?|^\+\s*1", re.IGNORECASE)
 
 
 def normalise(name: str) -> str:
-    """Key used to match the same person across columns.
+    """Key used to compare two spellings of the same name.
 
-    The sheet mixes cases and accents (`lucie` / `Lucie`, `MEGANE` / `MEGAN`),
-    so matching is done on a casefolded, unaccented, space-collapsed form.
+    Only for detecting duplicates and the excluded couple: the name written to
+    `guests.json` is always the sheet's own spelling, since that is what has to
+    match back when the site looks up the row to fill in.
     """
     stripped = unicodedata.normalize("NFKD", name)
     stripped = "".join(c for c in stripped if not unicodedata.combining(c))
-    key = re.sub(r"\s+", " ", stripped).strip().casefold()
-    return ALIASES.get(key, key)
+    return re.sub(r"\s+", " ", stripped).strip().casefold()
 
 
 def main() -> None:
     with CSV_PATH.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.reader(handle))
 
-    # First pass: who already has a bed, and which one.
-    lodging: dict[str, str] = {}
-    for index, row in enumerate(rows):
-        if index in LODGING_HEADER_ROWS:
-            continue
-        for column, label in LODGING_COLUMNS.items():
-            if column < len(row) and (cell := row[column].strip()):
-                lodging.setdefault(normalise(cell), label)
-
-    # Second pass: the guests themselves, in sheet order.
     guests: list[dict[str, object]] = []
-    seen: dict[str, dict[str, object]] = {}
-    for index, row in enumerate(rows):
-        if index in SIDE_HEADER_ROWS:
-            continue
-        for column, side in SIDE_COLUMNS.items():
-            if column >= len(row) or not (cell := row[column].strip()):
-                continue
-            key = normalise(cell)
-            if key in EXCLUDED:
-                continue
-            if key in seen:
-                # Same person listed on both sides: keep the first entry and
-                # record the second side instead of creating a duplicate.
-                sides = seen[key]["sides"]
-                if side not in sides:
-                    sides.append(side)
-                continue
+    seen: dict[str, int] = {}
+    duplicates: list[str] = []
 
-            logement = lodging.get(key)
-            guest = {
-                "name": cell,
+    for index, row in enumerate(rows):
+        if index in HEADER_ROWS or NAME_COLUMN >= len(row):
+            continue
+        name = row[NAME_COLUMN].strip()
+        if not name:
+            continue
+
+        key = normalise(name)
+        if key in EXCLUDED:
+            continue
+        if key in seen:
+            # Two rows for one person would make the row lookup ambiguous at
+            # write time, so flag rather than silently keep the first.
+            duplicates.append(f"{name} (lignes {seen[key] + 1} et {index + 1})")
+            continue
+        seen[key] = index
+
+        logement = row[LODGING_COLUMN].strip() if LODGING_COLUMN < len(row) else ""
+        guests.append(
+            {
+                "name": name,
                 # The sheet has no email column; the RSVP form collects it.
                 "email": None,
                 "hebergement": "hotel" if logement else "libre",
-                "logement": logement,
-                "sides": [side],
-                "needs_review": bool(PLACEHOLDER.search(cell)),
+                "logement": logement or None,
+                "needs_review": bool(PLACEHOLDER.search(name)),
             }
-            seen[key] = guest
-            guests.append(guest)
+        )
 
     JSON_PATH.write_text(
         json.dumps(guests, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -120,7 +101,9 @@ def main() -> None:
     review = [g["name"] for g in guests if g["needs_review"]]
     housed = sum(1 for g in guests if g["hebergement"] == "hotel")
     print(f"{len(guests)} invités -> {JSON_PATH.relative_to(ROOT)}")
-    print(f"  {housed} déjà logés, {len(guests) - housed} à confirmer")
+    print(f"  {housed} déjà logés, {len(guests) - housed} sans logement prévu")
+    if duplicates:
+        print(f"  ⚠️  {len(duplicates)} doublons ignorés : {', '.join(duplicates)}")
     if review:
         print(f"  {len(review)} entrées à clarifier avec Lucie : {', '.join(review)}")
 

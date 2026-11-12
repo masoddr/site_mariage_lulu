@@ -1,12 +1,12 @@
 /**
- * What happens to an RSVP once it has been accepted: record it, then notify.
+ * Mails sent once an RSVP has been accepted.
  *
- * Recording and notifying are split on purpose. Recording must never fail —
- * it is the only thing standing between a guest's answer and oblivion —
- * whereas a mail is a convenience that may legitimately be unavailable.
+ * One of the two durable copies of an answer — the other being the spreadsheet
+ * row written by `./sheets`. The route attempts both and only fails when
+ * neither succeeded.
  */
 
-import { formatGuestName } from '../data/guests';
+import { firstNameOf } from '../data/guests';
 import { formatRsvpSummary } from './rsvp';
 import type { RsvpPayload } from '../types';
 
@@ -15,7 +15,7 @@ import type { RsvpPayload } from '../types';
  *
  * Resend only accepts a domain verified in the account; until
  * lemariagedeslulu.fr is verified there, sending fails and the answer survives
- * through `recordRsvp` alone.
+ * through the spreadsheet row alone.
  */
 const MAIL_FROM = 'Lucie & Lucas <bonjour@lemariagedeslulu.fr>';
 
@@ -70,7 +70,7 @@ async function sendMail(
 }
 
 function guestMailBody(payload: RsvpPayload): string {
-  const firstName = formatGuestName(payload.guestName);
+  const firstName = firstNameOf(payload.guestName);
 
   if (!payload.attending) {
     return [
@@ -118,7 +118,7 @@ export async function sendRsvpMails(
     return false;
   }
 
-  const name = formatGuestName(payload.guestName);
+  const name = payload.guestName;
   const results = await Promise.allSettled([
     sendMail(
       config,

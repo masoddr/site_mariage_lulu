@@ -111,6 +111,11 @@ function readPayload(): Record<string, unknown> {
   if (attending) {
     payload.plat = data.get('plat') ?? '';
     payload.sauce = data.get('sauce') ?? '';
+    payload.dessert = data.get('dessert') ?? '';
+    // Sent as a boolean, and left undefined while nothing is ticked so the
+    // server can tell "not answered" from "not staying".
+    const brunch = data.get('brunch');
+    payload.brunch = brunch === null ? null : brunch === 'oui';
     // Absent from FormData when the field is disabled, which is exactly the
     // "hotel" case the server fills in from the guest list.
     payload.hebergement = data.get('hebergement') ?? '';

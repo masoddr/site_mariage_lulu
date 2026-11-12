@@ -5,7 +5,7 @@
  * standing up a request. The route only maps the outcome to a status code.
  */
 
-import { findGuestByName, formatGuestName } from '../data/guests';
+import { findGuestByName } from '../data/guests';
 import type { Hebergement, HebergementChoice, Plat, RsvpPayload } from '../types';
 
 /** Upper bound on free-text fields, to keep a mail from becoming a novel. */
@@ -120,6 +120,15 @@ export function validateRsvp(body: unknown): RsvpValidation {
     return fail('sauce', 'Votre choix de sauce est un peu trop long.');
   }
 
+  const dessert = readString(raw.dessert);
+  if (dessert.length > MAX_SAUCE_LENGTH) {
+    return fail('dessert', 'Votre choix de dessert est un peu trop long.');
+  }
+
+  if (typeof raw.brunch !== 'boolean') {
+    return fail('brunch', 'Merci d’indiquer si vous restez pour le brunch.');
+  }
+
   // A guest Lucie already booked a bed for does not get to choose: whatever
   // the browser sent, the sheet wins.
   let hebergement: Hebergement | HebergementChoice;
@@ -141,7 +150,9 @@ export function validateRsvp(body: unknown): RsvpValidation {
       attending: true,
       hebergement,
       plat,
+      brunch: raw.brunch,
       ...(sauce ? { sauce } : {}),
+      ...(dessert ? { dessert } : {}),
       ...(message ? { message } : {}),
     },
   };
@@ -155,7 +166,7 @@ export function validateRsvp(body: unknown): RsvpValidation {
  */
 export function formatRsvpSummary(payload: RsvpPayload): string {
   const lines = [
-    `Invité·e : ${formatGuestName(payload.guestName)}`,
+    `Invité·e : ${payload.guestName}`,
     `E-mail : ${payload.email}`,
     `Présence : ${payload.attending ? 'Oui' : 'Non'}`,
   ];
@@ -163,6 +174,8 @@ export function formatRsvpSummary(payload: RsvpPayload): string {
   if (payload.attending) {
     lines.push(`Plat : ${payload.plat ? PLAT_LABELS[payload.plat] : '—'}`);
     lines.push(`Sauce : ${payload.sauce ?? 'sans préférence'}`);
+    lines.push(`Dessert : ${payload.dessert ?? 'sans préférence'}`);
+    lines.push(`Brunch du dimanche : ${payload.brunch ? 'Oui' : 'Non'}`);
     lines.push(
       `Hébergement : ${payload.hebergement ? HEBERGEMENT_LABELS[payload.hebergement] : '—'}`,
     );

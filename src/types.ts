@@ -1,30 +1,25 @@
 /**
  * Accommodation status of a guest.
  *
- * - `hotel`: already booked by Lucie, the RSVP form shows a disabled field.
- * - `libre`: the guest picks between a tent on the estate or their own booking.
+ * - `hotel`: Lucie already arranged a bed, the RSVP form shows it locked.
+ * - `libre`: nothing arranged, the guest says what they plan to do.
  */
 export type Hebergement = 'hotel' | 'libre';
-
-/** Which of the two families invited the guest. */
-export type Side = 'lucie' | 'commun' | 'lucas';
 
 /**
  * A single guest, generated from Lucie's sheet by `scripts/import_guests.py`.
  *
- * The extra fields exist to avoid losing what the sheet encodes: they are not
- * used by the RSVP form, only by whoever re-reads the list later.
+ * `name` is the sheet's own spelling, deliberately: the site looks the guest's
+ * row up by that string when it writes an answer back.
  */
 export interface Guest {
   name: string;
   /** Always `null` for now: the sheet has no email column, the form asks. */
   email: string | null;
   hebergement: Hebergement;
-  /** Lucie's own wording for the bed already booked, or `null` if none. */
+  /** Lucie's wording for the bed arranged ("DOMAINE VERDE"), or `null`. */
   logement: string | null;
-  /** Usually one side; a few people are listed on both. */
-  sides: Side[];
-  /** `true` for placeholders like "sa meuf ?" — to clarify with Lucie. */
+  /** `true` for a row that is a note rather than an identified guest. */
   needs_review: boolean;
 }
 
@@ -35,8 +30,9 @@ export type HebergementChoice = 'tente' | 'exterieur';
  * Main course served by the food truck.
  *
  * Lucie's mail offers "pâtes ou gnocchis, accompagnés de la sauce de votre
- * choix" without listing the sauces, so `sauce` stays a free-text field until
- * she sends them; it then becomes a `select` without touching this shape.
+ * choix" without listing the sauces, so `sauce` and `dessert` stay free-text
+ * until she sends the options; they then become `select`s without touching
+ * this shape.
  */
 export type Plat = 'pates' | 'gnocchis';
 
@@ -45,9 +41,12 @@ export interface RsvpPayload {
   guestName: string;
   email: string;
   attending: boolean;
-  /** All three are absent when `attending` is false: nothing left to choose. */
+  /** All of the below are absent when `attending` is false. */
   hebergement?: Hebergement | HebergementChoice;
   plat?: Plat;
   sauce?: string;
+  dessert?: string;
+  /** Whether they stay for Sunday's brunch. */
+  brunch?: boolean;
   message?: string;
 }

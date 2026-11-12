@@ -1,19 +1,25 @@
 /**
- * Append RSVP answers to Lucie's spreadsheet.
+ * Fill a guest's row in Lucie's `fichier inscription` tab.
+ *
+ * That tab is a tracking grid: every guest already has a row, and answering the
+ * form fills its cells in. So this appends nothing — it locates the row, then
+ * writes the four answer columns.
  *
  * The site authenticates as a Google service account, which Lucie shares the
  * spreadsheet with like any other collaborator. No user ever signs in, so this
  * works from a background function with nothing but two secrets.
  *
  * Everything here speaks plain HTTP: `googleapis` would pull a large Node-only
- * dependency into a function whose whole job is one POST.
+ * dependency into a function whose whole job is two API calls.
  */
 
-import { formatGuestName } from '../data/guests';
 import type { RsvpPayload } from '../types';
 
-/** Tab the answers are appended to, created once by hand. */
-const SHEET_TAB = 'REPONSES SITE';
+/** Tab holding one row per guest. */
+const SHEET_TAB = 'fichier inscription';
+
+/** Rows 1 and 2 are headers; guests start on row 3. */
+const FIRST_GUEST_ROW = 3;
 
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
@@ -129,32 +135,76 @@ async function getAccessToken(config: SheetConfig): Promise<string> {
   return token.access_token;
 }
 
-/** One spreadsheet row, in the column order of the `REPONSES SITE` tab. */
-function toRow(payload: RsvpPayload, submittedAt: string): string[] {
-  return [
-    submittedAt,
-    formatGuestName(payload.guestName),
-    payload.email,
-    payload.attending ? 'Oui' : 'Non',
-    payload.plat ?? '',
-    payload.sauce ?? '',
-    payload.hebergement ?? '',
-    payload.message ?? '',
-  ];
+async function callSheets(
+  config: SheetConfig,
+  token: string,
+  path: string,
+  init?: RequestInit,
+): Promise<unknown> {
+  const response = await fetch(`${SHEETS_API}/${config.spreadsheetId}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...init?.headers,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Sheets API responded ${response.status}: ${await response.text()}`);
+  }
+  return response.json();
+}
+
+/** Compare two spellings of a name, ignoring case, accents and stray spaces. */
+function normalise(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 /**
- * Append one answer as a new row.
+ * Find the spreadsheet row holding a guest.
+ *
+ * The row is looked up on every submission rather than stored in
+ * `guests.json`: Lucie sorts and inserts rows in that tab, and a stale index
+ * would quietly write one guest's answer onto another's line.
+ */
+async function findGuestRow(
+  config: SheetConfig,
+  token: string,
+  guestName: string,
+): Promise<number | null> {
+  const range = encodeURIComponent(`${SHEET_TAB}!A${FIRST_GUEST_ROW}:A`);
+  const body = (await callSheets(config, token, `/values/${range}`)) as {
+    values?: string[][];
+  };
+
+  const target = normalise(guestName);
+  const rows = body.values ?? [];
+  for (let index = 0; index < rows.length; index += 1) {
+    if (normalise(rows[index]?.[0] ?? '') === target) {
+      return FIRST_GUEST_ROW + index;
+    }
+  }
+  return null;
+}
+
+/**
+ * Write one answer into the guest's row.
+ *
+ * Only the four answer columns are touched. Column C (`Logement`) is Lucie's
+ * own planning and is never overwritten, and neither is the name in column A.
  *
  * @param payload - An already-validated submission.
  * @param config - Service account credentials, or `null` when unconfigured.
- * @param submittedAt - Submission timestamp, as an ISO string.
  * @returns Whether the row was written.
  */
-export async function appendRsvpRow(
+export async function writeRsvpRow(
   payload: RsvpPayload,
   config: SheetConfig | null,
-  submittedAt: string,
 ): Promise<boolean> {
   if (!config) {
     console.warn('RSVP spreadsheet skipped: Google service account secrets are unset.');
@@ -163,28 +213,38 @@ export async function appendRsvpRow(
 
   try {
     const token = await getAccessToken(config);
-    const range = encodeURIComponent(`${SHEET_TAB}!A:H`);
-    const response = await fetch(
-      `${SHEETS_API}/${config.spreadsheetId}/values/${range}:append` +
-        '?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ values: [toRow(payload, submittedAt)] }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`Sheets API responded ${response.status}: ${await response.text()}`);
+    const row = await findGuestRow(config, token, payload.guestName);
+    if (row === null) {
+      throw new Error(`no row for "${payload.guestName}" in ${SHEET_TAB}`);
     }
+
+    // Uppercase to match how Lucie already fills these cells by hand
+    // ("PATES SANS GLUTEN", "DOMAINE VERDE").
+    const presence = payload.attending ? 'OUI' : 'NON';
+    const meal = payload.attending
+      ? [
+          payload.plat === 'gnocchis' ? 'GNOCCHIS' : 'PATES',
+          (payload.sauce ?? '').toUpperCase(),
+          (payload.dessert ?? '').toUpperCase(),
+          payload.brunch ? 'OUI' : 'NON',
+        ]
+      : ['', '', '', ''];
+
+    await callSheets(config, token, '/values:batchUpdate', {
+      method: 'POST',
+      body: JSON.stringify({
+        valueInputOption: 'USER_ENTERED',
+        data: [
+          { range: `${SHEET_TAB}!B${row}`, values: [[presence]] },
+          { range: `${SHEET_TAB}!D${row}:G${row}`, values: [meal] },
+        ],
+      }),
+    });
     return true;
   } catch (error) {
     // A spreadsheet failure must not cost the answer: the caller still has the
     // mail, and reports a hard failure only when both have gone wrong.
-    console.error('RSVP spreadsheet append failed:', error);
+    console.error('RSVP spreadsheet write failed:', error);
     cachedToken = null;
     return false;
   }
